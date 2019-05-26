@@ -77,7 +77,6 @@ const sendEmailVersions = async versions => {
   msg.text = formatTextEmail(versions);
   msg.html = formatHTMLEmail(versions);
   Mailer.sendMultiple(msg);
-  //await Version.markVersionSendMail(versions);
   return versions;
 };
 
@@ -99,7 +98,9 @@ const processUpdateVersions = async io => {
   await updadateNewVersions();
   let versions = await getProcessedVersion();
   sendNotification(io, versions);
-  return await sendEmailVersions(versions);
+  await sendEmailVersions(versions);
+  await Version.markVersionSendMail(versions);
+  return versions;
 };
 
 const sendResetChrome = (io, versions) => {
