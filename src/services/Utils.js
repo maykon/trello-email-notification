@@ -13,32 +13,35 @@ const getTimeZoneDate = (date = null) => {
 
 const isRescheduled = version => {
   return (
-    version.lastDue !== null &&
-    (version.due === null ||
-      new Date(version.due).getTime() !== new Date(version.lastDue).getTime())
+    version.lastDue &&
+    version.due !== null &&
+    new Date(version.due).getTime() !== new Date(version.lastDue).getTime()
   );
 };
 
 const formatVersionTextUpdated = version => {
   let reScheduled = isRescheduled(version);
   let textRescheduled = reScheduled ? "Reagendada: " : "";
-  let textDateRescheduled = reScheduled
-    ? ` (Data anterior: ${dateFormat(
-        new Date(version.lastDue),
-        "dd/mm - HH:MM:ss",
-        true
-      )})`
-    : "";
-  return `${textRescheduled}${formatVersionText(
+  let aborted = version.lastDue && version.due === null;
+  let textAborted = aborted ? "Removido da versão - " : "";
+  let textDateRescheduled =
+    reScheduled || textAborted
+      ? ` (Data anterior: ${dateFormat(
+          new Date(version.lastDue),
+          "dd/mm - HH:MM:ss",
+          true
+        )})`
+      : "";
+  return `${textRescheduled}${textAborted}${formatVersionText(
     version
   )}${textDateRescheduled}`;
 };
 
 const formatVersionText = version => {
   const dataStr = version.due
-    ? `Data: ${dateFormat(new Date(version.due), "dd/mm - HH:MM:ss", true)}`
-    : " Removido da versão";
-  return `${version.name} - ${dataStr}`;
+    ? ` - Data: ${dateFormat(new Date(version.due), "dd/mm - HH:MM:ss", true)}`
+    : "";
+  return `${version.name}${dataStr}`;
 };
 
 const getDateFormated = (date, hourReplaced) => {
@@ -87,17 +90,30 @@ const formatTextEmail = data => {
 
 const formatHTMLEmail = data => {
   let text = "<h1>As seguintes versões estão agendadas para liberação:</h1>";
-  text += "<ul>";
+  text += `<ul id="versions">`;
   data.forEach(version => {
-    text += `<li>${formatVersionTextUpdated(version)}</li>`;
+    const id = version.id ? version.id : version.trello_id;
+    text += `<li id="${version.id}">${formatVersionTextUpdated(version)}</li>`;
   });
   text += "</ul>";
   return text;
 };
 
+const getUpdateNotification = versions => {
+  let notification = [];
+  versions.forEach(version => {
+    const id = version.trello_id;
+    const text = formatVersionTextUpdated(version);
+    const { name, due } = version;
+    notification.push({ id, text, name, due });
+  });
+  return notification;
+};
+
 const getVersionsCorrectDate = versions => {
   return versions.map(version => ({
     ...version,
+    trello_id: version.trello_id ? version.trello_id : version.id,
     due: getTimeZoneDate(version.due),
     lastDue: getTimeZoneDate(version.lastDue),
     dateLastActivity: getTimeZoneDate(version.dateLastActivity),
@@ -122,5 +138,6 @@ module.exports = {
   getNextVersionDate,
   formatTextEmail,
   formatHTMLEmail,
-  getVersionsCorrectDate
+  getVersionsCorrectDate,
+  getUpdateNotification
 };

@@ -7,6 +7,14 @@ const EmailSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  showEmail: {
+    type: Boolean,
+    default: true
+  },
+  showNotification: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -17,12 +25,19 @@ EmailSchema.virtual("fullEmail").get(function() {
   return `${this.name} <${this.email}>`;
 });
 
-EmailSchema.statics.getEmailList = async function() {
-  const emailList = await this.find({});
-  if (!emailList.length) return [];
+EmailSchema.statics.updateOptions = async function(options) {
+  var email = await this.findOneAndUpdate({ email: options.email }, options, {
+    upsert: true
+  });
+  return email;
+};
 
+EmailSchema.statics.getEmailList = async function() {
+  let emailList = await this.find({});
+  if (!emailList.length) return [];
+  let active_mails = emailList.filter(email => email.showEmail);
   let emails = [];
-  emailList.forEach(email => {
+  active_mails.forEach(email => {
     emails.push(email.fullEmail);
   });
   return emails;

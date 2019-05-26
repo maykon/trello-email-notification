@@ -7,13 +7,16 @@ const cors = require("cors");
 const compression = require("compression");
 const mongoose = require("mongoose");
 
-require("./services/Sentry");
+const sentry = require("./services/Sentry");
 
 const app = express();
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
 
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
-  useCreateIndex: true
+  useCreateIndex: true,
+  useFindAndModify: false
 });
 
 app.use(compression());
@@ -24,8 +27,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 app.use(require("./routes"));
 
-app.listen(process.env.PORT || 3000);
+sentry(io);
+
+http.listen(process.env.PORT || 3000);
 
 process.on("SIGTERM", () => mongoose.disconnect());

@@ -4,12 +4,12 @@ const Email = require("../models/Email");
 const api = require("./TrelloApi");
 const { sgMail: Mailer, msg } = require("./Mailer");
 const {
-  getTimeZoneDate,
   getTodayDate,
   getNextVersionDate,
   formatTextEmail,
   formatHTMLEmail,
-  getVersionsCorrectDate
+  getVersionsCorrectDate,
+  getUpdateNotification
 } = require("./Utils");
 
 function GetTrelloToken() {
@@ -61,32 +61,65 @@ const updateVersionsDB = async data => {
   });
 };
 
-const sendEmailVersions = async () => {
+const getProcessedVersion = async () => {
   let versions = await Version.getNextVersions();
+  if (!versions.length) return [];
+  versions = getScheduledVersion(versions);
+  if (!versions.length) return [];
+  return versions;
+};
+
+const sendEmailVersions = async versions => {
   if (!versions.length) return [];
   const emails = await Email.getEmailList();
   if (!emails.length) return [];
-  versions = getScheduledVersion(versions);
-  if (!versions.length) return [];
   msg.to = emails;
   msg.text = formatTextEmail(versions);
   msg.html = formatHTMLEmail(versions);
   Mailer.sendMultiple(msg);
-  await Version.markVersionSendMail(versions);
+  //await Version.markVersionSendMail(versions);
   return versions;
 };
 
-const processUpdateVersions = async () => {
+const sendNotification = (io, versions) => {
+  if (!versions.length) return;
+  let notification = getUpdateNotification(versions);
+  io.emit("versions", notification);
+};
+
+const updadateNewVersions = async () => {
   const response = await getTrelloVersions(
     "fields=name,url&cards=visible&card_fields=name,url,due,dueComplete,dateLastActivity,idList"
   );
   const actives = getVersions(response.data);
   await updateVersionsDB(actives);
-  return await sendEmailVersions();
+};
+
+const processUpdateVersions = async io => {
+  await updadateNewVersions();
+  let versions = await getProcessedVersion();
+  sendNotification(io, versions);
+  return await sendEmailVersions(versions);
+};
+
+const sendResetChrome = (io, versions) => {
+  if (!versions.length) return;
+  let notification = getUpdateNotification(versions);
+  io.emit("reset", notification);
+};
+
+const resetVersions = async io => {
+  await Version.deleteMany({});
+  await updadateNewVersions();
+  let versions = await getProcessedVersion();
+  sendResetChrome(io, versions);
 };
 
 module.exports = {
+  getScheduledVersion,
+  getProcessedVersion,
   getTrelloVersions,
   getVersions,
-  processUpdateVersions
+  processUpdateVersions,
+  resetVersions
 };
