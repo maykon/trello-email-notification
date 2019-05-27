@@ -42,7 +42,7 @@ routes.delete("/versions", async (req, res) => {
   res.send();
 });
 
-routes.post("/emails/options", async (req, res) => {
+routes.post("/options", async (req, res) => {
   if (!req.body.email)
     return res.status(404).json({ error: "Has not a email" });
 
