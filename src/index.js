@@ -12,6 +12,7 @@ const sentry = require("./services/Sentry");
 const app = express();
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
+const healthcheck = require("healthcheck-middleware");
 
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
@@ -32,6 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(require("./routes"));
+app.use("/health", healthcheck());
 
 sentry(io);
 

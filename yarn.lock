@@ -1194,6 +1194,11 @@ has-values@^1.0.0:
     is-number "^3.0.0"
     kind-of "^4.0.0"
 
+healthcheck-middleware@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/healthcheck-middleware/-/healthcheck-middleware-1.0.1.tgz#70556533d3c472b594ef8a37e3b84af7d9e54ad9"
+  integrity sha1-cFVlM9PEcrWU74o347hK99nlStk=
+
 helmet-crossdomain@0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/helmet-crossdomain/-/helmet-crossdomain-0.3.0.tgz#707e2df930f13ad61f76ed08e1bb51ab2b2e85fa"
